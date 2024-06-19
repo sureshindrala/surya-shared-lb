@@ -204,9 +204,8 @@ def call (Map pipelineParams){
             }
         }
     }
-
+    
     }
-
     def dockerBuildandPush() {
         return {
                 echo "******************************** Build Docker Image ********************************"
