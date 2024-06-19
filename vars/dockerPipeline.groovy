@@ -207,22 +207,18 @@ pipeline {
 
 }
 
-def dockerBuildandpush(){
+def dockerBuildandPush(){
     return {
-
-            sh """
-                cp ${WORKSPACE}/target/i27-${APPLICATION_NAME}-${POM_VERSION}.${POM_PACKAGING} ./.cicd
-                ls -la ./.cicd
-                echo "***********Building Docker Image*******************"
-                docker build --force-rm --no-cache --pull --rm=true --build-arg JAR_SOURCE=i27-${APPLICATION_NAME}-${POM_VERSION}.${POM_PACKAGING} -t ${DOCKER_HUB}/${APPLICATION_NAME}:${GIT_COMMIT} ./.cicd
-                docker images
-                echo "************Docker login*******************"
-                docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}
-                echo "**************Docker Push******************"
-                docker push ${DOCKER_HUB}/${APPLICATION_NAME}:${GIT_COMMIT}
-                echo "********** pushed image successfully !!!! **********"
-             """   
-            }
+            echo "******************************** Build Docker Image ********************************"
+            sh "cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd"
+            sh "ls -la ./.cicd"
+            sh "docker build --force-rm --no-cache --pull --rm=true --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} -t ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT} ./.cicd"
+            echo "******************************** Login to Docker Repo ********************************"
+            sh "docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}"
+            echo "******************************** Docker Push ********************************"
+            sh "docker push ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
+            echo "Pushed the image succesfully!!!"
+    }
 }
 
 def dockerDeploy(envDeploy, hostPort, contPort) {
