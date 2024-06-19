@@ -204,9 +204,7 @@ def call (Map pipelineParams){
             }
         }
     }
-    
-    }
-    def dockerBuildandPush() {
+      def dockerBuildandPush() {
         return {
                 echo "******************************** Build Docker Image ********************************"
                 sh "cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd"
@@ -219,6 +217,8 @@ def call (Map pipelineParams){
                 echo "Pushed the image succesfully!!!"
         }
     }
+ }
+  
 
     def dockerDeploy(envDeploy, hostPort, contPort) {
         return {
