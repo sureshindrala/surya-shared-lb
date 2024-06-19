@@ -1,40 +1,19 @@
 import com.i27academy.builds.Docker
 
-def call (Map pipelineParams){
+def call(Map pipelineParams) {
     Docker docker = new Docker(this)
     pipeline {
         agent {
             label "k8s-slave"
         }
         parameters {
-            choice(name: 'buildOnly',
-            choices: 'no\nyes',
-            description: 'This will only build the application'
-            )
-            choice (name: 'scanOnly',
-            choices: 'no\nyes',
-            description: 'This will only build the application'
-            )
-            choice(name: 'dockerPush',
-            choices: 'no\nyes',
-            description: 'This will only push the docker image'
-            )
-            choice(name:'deployToDev',
-            choices: 'no\nyes',
-            description: 'This will deploy dev environment'
-            )
-            choice (name: 'deployToTest',
-            choices: 'no\nyes',
-            description: 'This will deploy Test environment'
-            )
-            choice(name: 'deployToStage',
-            choices: 'no\nyes',
-            description: 'This will deploy Stage environment'
-            )
-            choice(name: 'deployToProd',
-            choices: 'no\nyes',
-            description: 'This will deploy prod environment'
-            )
+            choice(name: 'buildOnly', choices: 'no\nyes', description: 'This will only build the application')
+            choice(name: 'scanOnly', choices: 'no\nyes', description: 'This will only build the application')
+            choice(name: 'dockerPush', choices: 'no\nyes', description: 'This will only push the docker image')
+            choice(name: 'deployToDev', choices: 'no\nyes', description: 'This will deploy dev environment')
+            choice(name: 'deployToTest', choices: 'no\nyes', description: 'This will deploy Test environment')
+            choice(name: 'deployToStage', choices: 'no\nyes', description: 'This will deploy Stage environment')
+            choice(name: 'deployToProd', choices: 'no\nyes', description: 'This will deploy prod environment')
         }
         environment {
             APPLICATION_NAME = "eureka"
@@ -53,27 +32,19 @@ def call (Map pipelineParams){
             stage('Build') {
                 when {
                     anyOf {
-                        expression {
-                            params.buildOnly == 'yes'
-                        }
+                        expression { params.buildOnly == 'yes' }
                     }
                 }
                 steps {
                     script {
-                    buildApp.call()
+                        buildApp()
                     }
-                    
-                // echo "Building ${env.APPLICATION_NAME} application"
-                // sh 'mvn clean package -DskipTests=true'
                 }
             }
             stage('Unit Test') {
                 when {
                     anyOf {
-                        expression {
-                            params.buildOnly == 'yes'
-                            params.dockerPush == 'yes'
-                        }
+                        expression { params.buildOnly == 'yes' || params.dockerPush == 'yes' }
                     }
                 }
                 steps {
@@ -86,16 +57,14 @@ def call (Map pipelineParams){
                     }
                 }
             }
-            stage('sonar') {
+            stage('Sonar') {
                 when {
                     anyOf {
-                        expression {
-                            params.scanOnly == 'yes'
-                        }
+                        expression { params.scanOnly == 'yes' }
                     }
                 }
                 steps {
-                    echo "******starting with sonarqube********"
+                    echo "******starting with SonarQube********"
                     withSonarQubeEnv('SonarQube') {
                         sh '''
                         echo "Starting SonarQube analysis"
@@ -115,60 +84,51 @@ def call (Map pipelineParams){
             stage('Docker Build') {
                 when {
                     anyOf {
-                        expression {
-                            params.dockerPush == 'yes'
-                        }
+                        expression { params.dockerPush == 'yes' }
                     }
                 }
                 steps {
                     script {
-                    dockerBuildandpush().call()
+                        dockerBuildandPush()
                     }
-                
                 }
             }
             stage('Deploy to Dev') {
                 when {
-                    expression {
-                        params.deployToDev == 'yes'
-                    }
+                    expression { params.deployToDev == 'yes' }
                 }
                 steps {
                     script {
-                        imageValidation().call()
+                        imageValidation()
                         echo "***** Entering Dev Environment *****"
-                        dockerDeploy('dev', '5761', '8761').call()
+                        dockerDeploy('dev', '5761', '8761')
                         echo "******* Deploy Dev Successfully *****"
                     }
                 }
             }
             stage('Deploy to Test') {
                 when {
-                    expression {
-                        params.deployToTest == 'yes'
-                    }
+                    expression { params.deployToTest == 'yes' }
                 }
                 steps {
                     script {
-                        imageValidation().call()
+                        imageValidation()
                         echo "***** Entering Test Environment *****"
-                        dockerDeploy('tst', '6761', '8761').call()
+                        dockerDeploy('tst', '6761', '8761')
                         echo "*********** Test Environment successfully *******"
                     }
                 }
             }
             stage('Deploy to Stage') {
-                when{
-                    expression {
-                        params.deployToStage == 'yes'
-                    }
+                when {
+                    expression { params.deployToStage == 'yes' }
                 }
                 steps {
                     script {
-                        imageValidation().call()
+                        imageValidation()
                         echo "***** Entering Stage Environment *****"
-                        dockerDeploy('stage', '7761', '8761').call()
-                        echo " stage environment completed suceesfully"
+                        dockerDeploy('stage', '7761', '8761')
+                        echo "Stage environment completed successfully"
                     }
                 }
             }
@@ -176,94 +136,70 @@ def call (Map pipelineParams){
                 when {
                     allOf {
                         anyOf {
-                        expression {
-                            params.deployToProd =='yes'
-                        }              
-                    }
-                    anyOf {
-                        branch 'release/*'
-                    }
-                    
+                            expression { params.deployToProd == 'yes' }
+                        }
+                        anyOf {
+                            branch 'release/*'
+                        }
                     }
                 }
                 steps {
-                    timeout(time:300, unit: 'SECONDS') {
-                        input message: "Deploying ${env.APPLICATION_NAME} to prod ????", ok: 'yes' , submitter: 'greeshma'
+                    timeout(time: 300, unit: 'SECONDS') {
+                        input message: "Deploying ${env.APPLICATION_NAME} to prod ????", ok: 'yes', submitter: 'greeshma'
                     }
                     script {
-                        imageValidation().call()
-                        dockerDeploy('prod', '8761', '8761').call()
-                    
+                        imageValidation()
+                        dockerDeploy('prod', '8761', '8761')
                     }
                 }
             }
-            stage('clean') {
+            stage('Clean') {
                 steps { 
                     cleanWs()
                 }
             }
         }
-        dockerBuildandPush()
     }
-    
-    }
-    def dockerBuildandPush(){
-        return {
-                echo "******************************** Build Docker Image ********************************"
-                sh "cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd"
-                sh "ls -la ./.cicd"
-                sh "docker build --force-rm --no-cache --pull --rm=true --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} -t ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT} ./.cicd"
-                echo "******************************** Login to Docker Repo ********************************"
-                sh "docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}"
-                echo "******************************** Docker Push ********************************"
-                sh "docker push ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
-                echo "Pushed the image succesfully!!!"
-        }
-    }
+}
 
-    def dockerDeploy(envDeploy, hostPort, contPort) {
-        return {
-        echo "******************************** Deploying to $envDeploy Environment ********************************"
-        withCredentials([usernamePassword(credentialsId: 'docker_env_creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
-            // some block
-            // With the help of this block, ,the slave will be connecting to docker-vm and execute the commands to create the containers.
-            //sshpass -p ssh -o StrictHostKeyChecking=no user@host command_to_run
-            //sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} hostname -i" 
-            
+def dockerBuildandPush() {
+    echo "******************************** Build Docker Image ********************************"
+    sh "cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd"
+    sh "ls -la ./.cicd"
+    sh "docker build --force-rm --no-cache --pull --rm=true --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} -t ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT} ./.cicd"
+    echo "******************************** Login to Docker Repo ********************************"
+    sh "docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}"
+    echo "******************************** Docker Push ********************************"
+    sh "docker push ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
+    echo "Pushed the image successfully!!!"
+}
+
+def dockerDeploy(envDeploy, hostPort, contPort) {
+    echo "******************************** Deploying to $envDeploy Environment ********************************"
+    withCredentials([usernamePassword(credentialsId: 'docker_env_creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
         script {
-            // Pull the image on the Docker Server
             sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker pull ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
-            
             try {
-                // Stop the Container
-                echo "Stoping the Container"
+                echo "Stopping the Container"
                 sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker stop ${env.APPLICATION_NAME}-$envDeploy"
-
-                // Remove the Container 
                 echo "Removing the Container"
                 sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker rm ${env.APPLICATION_NAME}-$envDeploy"
-                } catch(err) {
+            } catch (Exception err) {
                 echo "Caught the Error: $err"
             }
-
-            // Create a Container 
             echo "Creating the Container"
             sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker run -d -p $hostPort:$contPort --name ${env.APPLICATION_NAME}-$envDeploy ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
-            }
         }
-        }
-        
     }
-    def imageValidation() {
-    return {
-        println ("Pulling the docker image")
-        try {
+}
+
+def imageValidation() {
+    println("Pulling the docker image")
+    try {
         sh "docker pull ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
-        }
-        catch (Exception e) {
-            println ("OOPS..!, Docker images with this tag is not availiable ")
-            buildApp().call()
-            dockerBuildandpush().call()
-            }
-        }
+    } catch (Exception e) {
+        println("OOPS..!, Docker image with this tag is not available")
+        buildApp()
+        dockerBuildandPush()
     }
+}
