@@ -203,6 +203,7 @@ def call (Map pipelineParams){
                 }
             }
         }
+        dockerBuildandPush()
     }
     
     }
