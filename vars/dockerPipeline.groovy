@@ -275,7 +275,5 @@ def imageValidation() {
             dockerBuildandPush().call()
         }
     }
+} 
 }
-
-
-    
