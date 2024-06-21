@@ -5,10 +5,10 @@ def call(Map pipelineParams) {
     Docker docker = new Docker(this)
     K8s k8s = new K8s(this)
     pipeline {
-    agent {
-        label 'k8s-slave'
-    }
-    parameters {
+        agent {
+            label 'k8s-slave'
+        }
+        parameters {
         choice(name: 'buildOnly',
             choices: 'no\nyes',
             description: 'This will only build the application'
@@ -37,8 +37,8 @@ def call(Map pipelineParams) {
             choices: 'no\nyes',
             description: 'This will Deploy the app to Prod env'
         )
-    }
-    environment {
+        }
+        environment {
         APPLICATION_NAME = "${pipelineParams.appName}"
         //APPLICATION_NAME = "eureka"
         POM_VERSION = readMavenPom().getVersion()
@@ -47,12 +47,12 @@ def call(Map pipelineParams) {
         DOCKER_HUB = "docker.io/sureshindrala"
         DOCKER_CREDS = credentials("dockerhub_creds")
         SONAR_URL = "http://34.66.190.70:9000/"  
-    }
-    tools {
+        }
+        tools {
         maven 'Maven-3.8.8'
         jdk 'Jdk-17'
-    }
-    stages {
+        }
+        stages {
         stage ('Authenticate to google cloud GKE') {
             steps {
                 echo "****Executing in Google Cloud auth stage"
@@ -223,8 +223,8 @@ def call(Map pipelineParams) {
                 }
             }
         }
+        }
     }
-}
 // This method will build image and push to registry
 def dockerBuildandPush(){
     return {
