@@ -1,8 +1,5 @@
 import com.i27academy.builds.Docker
 import com.i27academy.k8s.K8s
-
-library ('com.i27academy.slb')
-
   
 def call(Map pipelineParams) {
     Docker docker = new Docker(this)
