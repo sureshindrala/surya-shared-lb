@@ -226,8 +226,8 @@ def call(Map pipelineParams) {
                 }
             }
         }
-        }
     }
+}
 // This method will build image and push to registry
 def dockerBuildandPush(){
     return {
