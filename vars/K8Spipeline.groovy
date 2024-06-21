@@ -45,7 +45,7 @@ def call(Map pipelineParams) {
                 }
                 steps {
                     script {
-                        echo "********* Executing Addition Method**********"
+                        echo "********* **Executing Addition Method**********"
                         println docker.add(8, 9)
                         docker.buildApp("${env.APPLICATION_NAME}")
                     }
