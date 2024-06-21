@@ -55,7 +55,10 @@ def call(Map pipelineParams) {
         stages {
         stage ('Authenticate to google cloud GKE') {
             steps {
-                echo "****Executing in Google Cloud auth stage"
+                script {
+                   echo "****Executing in Google Cloud auth stage"     
+                }
+          
                 
             }
         }
