@@ -9,7 +9,8 @@ def call(Map pipelineParams) {
     pipeline {
         agent any
         parameters {
-            choice(name: 'buildOnly',
+            choice(
+                name: 'buildOnly',
                 choices: 'no\nyes',
                 description: 'This will only build the application'
             )
