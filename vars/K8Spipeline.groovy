@@ -1,15 +1,14 @@
 import com.i27academy.builds.Docker
 import com.i27academy.k8s.K8s
 
+library ('com.i27academy.slb')
 
 def call(Map pipelineParams) {
     Docker docker = new Docker(this)
     K8s k8s = new K8s(this)
     pipeline {
-        agent {
-            label "k8s-slave"
-        }
-        parameters{
+        agent any
+        parameters {
             choice(name: 'buildOnly',
                 choices: 'no\nyes',
                 description: 'This will only build the application'
@@ -47,23 +46,24 @@ def call(Map pipelineParams) {
             //version+ packaging
             DOCKER_HUB = "docker.io/sureshindrala"
             DOCKER_CREDS = credentials("dockerhub_creds")
-            SONAR_URL = "http://34.66.190.70:9000/"  
+            SONAR_URL = "http://34.66.190.70:9000/"
+            SONAR_TOKEN = credentials('sonar_creds')
+           
         }
         tools {
             maven 'Maven-3.8.8'
-            jdk 'Jdk-17'
+            jdk 'JDK-17'
         }
         stages {
-            stage ('k8s-authenticate') {
+            stage ('Authenticate to Google Cloud GKE') {
                 steps {
-                    echo "GKE Authentication"
+                    echo "Executing in Google Cloud auth stage"
                     script {
+                        //gke_cluster_name, gke_zone, gke_project 
                         k8s.auth_login()
-                    }
+                    }  
                 }
             }
-                
-            
             stage ('Build'){
                 when {
                     anyOf {
@@ -77,8 +77,8 @@ def call(Map pipelineParams) {
                 steps { // jenkins env variable no need of env 
                     script {
                         //buildApp().call()
-                        echo "********* Executing Addition Method**********"
-                        println docker.add(8,9)
+                        echo "********** Executing Addition Method **********"
+                        println docker.add(4,5)
                         docker.buildApp("${env.APPLICATION_NAME}")
                     }
 
@@ -165,7 +165,10 @@ def call(Map pipelineParams) {
                 steps {
                     script {
                         imageValidation().call()
-                        dockerDeploy('dev', '5761' , '8761').call()
+                        def docker_image = "${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${env.DOCKER_IMAGE_TAG}"
+                        // dockerDeploy('dev', '5761' , '8761').call()
+                        k8s.auth_login("${env.GKE_DEV_CLUSTER_NAME}", "${env.GKE_DEV_ZONE}", "${env.GKE_DEV_PROJECT}")
+                        k8s.k8sdeploy("${env.K8S_DEV_FILE}", docker_image, "${env.DEV_NAMESPACE}")
                         echo "Deployed to Dev Succesfully!!!!"
                     }
                 }
@@ -179,8 +182,12 @@ def call(Map pipelineParams) {
                 steps {
                     script {
                         imageValidation().call()
-                        echo "***** Entering Test Environment *****"
-                        dockerDeploy('tst', '6761', '8761').call()
+                        def docker_image = "${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${env.DOCKER_IMAGE_TAG}"
+                        // dockerDeploy('dev', '5761' , '8761').call()
+                        k8s.auth_login("${env.GKE_DEV_CLUSTER_NAME}", "${env.GKE_DEV_ZONE}", "${env.GKE_DEV_PROJECT}")
+                        k8s.k8sdeploy("${env.K8S_TST_FILE}", docker_image)
+                        echo "Deployed to TEST Succesfully!!!!"
+
                     }
                 }
             }
@@ -214,7 +221,7 @@ def call(Map pipelineParams) {
                 }
                 steps {
                     timeout(time: 300, unit: 'SECONDS') {
-                        input message: "Deploying ${env.APPLICATION_NAME} to prod ????", ok: 'yes', submitter: 'suresh'
+                        input message: "Deploying ${env.APPLICATION_NAME} to prod ????", ok: 'yes', submitter: 'krish'
                     }
                     script {
                         imageValidation().call()
@@ -225,22 +232,25 @@ def call(Map pipelineParams) {
             stage ('clean'){
                 steps {
                     cleanWs()
-                    }
                 }
             }
         }
     }
+}
+// This Jenkinsfile is for the Eureka Deployment.
+
+
 // This method will build image and push to registry
 def dockerBuildandPush(){
     return {
             echo "******************************** Build Docker Image ********************************"
             sh "cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd"
             sh "ls -la ./.cicd"
-            sh "docker build --force-rm --no-cache --pull --rm=true --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} -t ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT} ./.cicd"
+            sh "docker build --force-rm --no-cache --pull --rm=true --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} -t ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${env.DOCKER_IMAGE_TAG} ./.cicd"
             echo "******************************** Login to Docker Repo ********************************"
             sh "docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}"
             echo "******************************** Docker Push ********************************"
-            sh "docker push ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
+            sh "docker push ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${env.DOCKER_IMAGE_TAG}"
             echo "Pushed the image succesfully!!!"
     }
 }
@@ -249,7 +259,7 @@ def dockerBuildandPush(){
 def dockerDeploy(envDeploy, hostPort, contPort) {
     return {
     echo "******************************** Deploying to $envDeploy Environment ********************************"
-    withCredentials([usernamePassword(credentialsId: 'docker_env_creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
+    withCredentials([usernamePassword(credentialsId: 'maha_docker_vm_creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
         // some block
         // With the help of this block, ,the slave will be connecting to docker-vm and execute the commands to create the containers.
         //sshpass -p ssh -o StrictHostKeyChecking=no user@host command_to_run
@@ -281,15 +291,21 @@ def dockerDeploy(envDeploy, hostPort, contPort) {
 }
 
 def imageValidation() {
+    Docker docker = new Docker(this)
+    K8s k8s = new K8s(this)
     return {
         println ("Pulling the docker image")
         try {
-        sh "docker pull ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}" 
+        sh "docker pull ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${env.DOCKER_IMAGE_TAG}" 
         }
         catch (Exception e) {
             println("OOPS!, docker images with this tag is not available")
-            buildApp().call()
+            println("LINE BEFORE ENTERING DOCKER METHOD")
+            //k8s.auth_login("${env.GKE_DEV_CLUSTER_NAME}", "${env.GKE_DEV_ZONE}", "${env.GKE_DEV_PROJECT}")
+            docker.buildApp("${env.APPLICATION_NAME}")
             dockerBuildandPush().call()
         }
     }
-} 
+}
+
+
