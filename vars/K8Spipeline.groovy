@@ -14,31 +14,37 @@ def call(Map pipelineParams) {
                 choices: 'no\nyes',
                 description: 'This will only build the application'
             )
-            choice(name: 'scanOnly',
+            choice(
+                name: 'scanOnly',
                 choices: 'no\nyes',
                 description: 'This will Scan the application'
             )
-            choice(name: 'dockerPush',
+            choice(
+                name: 'dockerPush',
                 choices: 'no\nyes',
                 description: 'This will build the app, docker build, docker push'
             )
-            choice(name: 'deployToDev',
+            choice(
+                name: 'deployToDev',
                 choices: 'no\nyes',
                 description: 'This will Deploy the app to Dev env'
             )
-            choice(name: 'deployToTest',
+            choice(
+                name: 'deployToTest',
                 choices: 'no\nyes',
                 description: 'This will Deploy the app to Test env'
             )
-            choice(name: 'deployToStage',
+            choice(
+                name: 'deployToStage',
                 choices: 'no\nyes',
                 description: 'This will Deploy the app to Stage env'
             )
-            choice(name: 'deployToProd',
+            choice(
+                name: 'deployToProd',
                 choices: 'no\nyes',
                 description: 'This will Deploy the app to Prod env'
             )
-    }
+        }
         environment {
             APPLICATION_NAME = "${pipelineParams.appName}"
             //APPLICATION_NAME = "eureka"
