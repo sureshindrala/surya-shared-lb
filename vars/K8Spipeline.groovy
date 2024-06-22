@@ -7,7 +7,7 @@ def call(Map pipelineParams) {
     K8s k8s = new K8s(this)
     pipeline {
         agent {
-            label 'k8s-slave'
+            label "k8s-slave"
         }
         parameters{
             choice(name: 'buildOnly',
