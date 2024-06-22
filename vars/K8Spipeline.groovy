@@ -6,230 +6,230 @@ def call(Map pipelineParams) {
     Docker docker = new Docker(this)
     K8s k8s = new K8s(this)
     pipeline {
-    agent {
-        label 'k8s-slave'
-    }
-    parameters {
-        choice(name: 'buildOnly',
-            choices: 'no\nyes',
-            description: 'This will only build the application'
-        )
-        choice(name: 'scanOnly',
-            choices: 'no\nyes',
-            description: 'This will Scan the application'
-        )
-        choice(name: 'dockerPush',
-            choices: 'no\nyes',
-            description: 'This will build the app, docker build, docker push'
-        )
-        choice(name: 'deployToDev',
-            choices: 'no\nyes',
-            description: 'This will Deploy the app to Dev env'
-        )
-        choice(name: 'deployToTest',
-            choices: 'no\nyes',
-            description: 'This will Deploy the app to Test env'
-        )
-        choice(name: 'deployToStage',
-            choices: 'no\nyes',
-            description: 'This will Deploy the app to Stage env'
-        )
-        choice(name: 'deployToProd',
-            choices: 'no\nyes',
-            description: 'This will Deploy the app to Prod env'
-        )
-    }
-    environment {
-        APPLICATION_NAME = "${pipelineParams.appName}"
-        //APPLICATION_NAME = "eureka"
-        POM_VERSION = readMavenPom().getVersion()
-        POM_PACKAGING = readMavenPom().getPackaging()
-        //version+ packaging
-        DOCKER_HUB = "docker.io/sureshindrala"
-        DOCKER_CREDS = credentials("dockerhub_creds")
-        SONAR_URL = "http://34.66.190.70:9000/"  
-    }
-    tools {
-        maven 'Maven-3.8.8'
-        jdk 'Jdk-17'
-    }
-    stages {
-        stage ('k8s-authenticate') {
-            steps {
-                echo "GKE Authentication"
-                script {
-                    k8s.auth_login()
-                }
-            }
+        agent {
+            label 'k8s-slave'
         }
-            
-        
-        stage ('Build'){
-            when {
-                anyOf {
-                    expression {
-                        params.buildOnly == 'yes'
-                       // params.dockerPush == 'yes'
-                    }
-                }
-            }
-            // Application Build happens here
-            steps { // jenkins env variable no need of env 
-                script {
-                    //buildApp().call()
-                    echo "********* Executing Addition Method**********"
-                    println docker.add(8,9)
-                    docker.buildApp("${env.APPLICATION_NAME}")
-                }
-
-                //-DskipTests=true 
-            }
+        parameters{
+            choice(name: 'buildOnly',
+                choices: 'no\nyes',
+                description: 'This will only build the application'
+            )
+            choice(name: 'scanOnly',
+                choices: 'no\nyes',
+                description: 'This will Scan the application'
+            )
+            choice(name: 'dockerPush',
+                choices: 'no\nyes',
+                description: 'This will build the app, docker build, docker push'
+            )
+            choice(name: 'deployToDev',
+                choices: 'no\nyes',
+                description: 'This will Deploy the app to Dev env'
+            )
+            choice(name: 'deployToTest',
+                choices: 'no\nyes',
+                description: 'This will Deploy the app to Test env'
+            )
+            choice(name: 'deployToStage',
+                choices: 'no\nyes',
+                description: 'This will Deploy the app to Stage env'
+            )
+            choice(name: 'deployToProd',
+                choices: 'no\nyes',
+                description: 'This will Deploy the app to Prod env'
+            )
         }
-        stage ('Unit Tests') {
-            when {
-                anyOf {
-                    expression {
-                        params.buildOnly == 'yes'
-                        params.dockerPush == 'yes'
-                    }
-                }
-            }
-            steps {
-                echo "Performing Unit tests for ${env.APPLICATION_NAME} application"
-                sh "mvn test"
-            }
-            post {
-                always {
-                    junit 'target/surefire-reports/*.xml'
-                }
-            }
+        environment {
+            APPLICATION_NAME = "${pipelineParams.appName}"
+            //APPLICATION_NAME = "eureka"
+            POM_VERSION = readMavenPom().getVersion()
+            POM_PACKAGING = readMavenPom().getPackaging()
+            //version+ packaging
+            DOCKER_HUB = "docker.io/sureshindrala"
+            DOCKER_CREDS = credentials("dockerhub_creds")
+            SONAR_URL = "http://34.66.190.70:9000/"  
         }
-        stage ('Sonar') {
-            when {
-                    expression {
-                        params.scanOnly == 'yes'  
-                    }
-            }
-            steps {
-                echo "Starting Sonarqube With Quality Gates"
-                withSonarQubeEnv('SonarQube'){ // manage jenkins > configure  > sonarqube scanner
-                    sh """
-                        mvn clean verify sonar:sonar \
-                            -Dsonar.projectKey=i27-eureka \
-                            -Dsonar.host.url=${env.SONAR_URL} \
-                            -Dsonar.login=${SONAR_TOKEN}
-                    """
-                }
-                timeout (time: 2, unit: 'MINUTES') { // NANOSECONDS, SECONDS , MINUTES , HOURS, DAYS
+        tools {
+            maven 'Maven-3.8.8'
+            jdk 'Jdk-17'
+        }
+        stages {
+            stage ('k8s-authenticate') {
+                steps {
+                    echo "GKE Authentication"
                     script {
-                        waitForQualityGate abortPipeline: true
+                        k8s.auth_login()
                     }
-                } 
-
+                }
+            }
+                
             
-            }
-        }
-        /*
-        stage ('Docker Format') {
-            steps {
-                // Tell me, how can i read a pom.xml from jenkinfile
-                echo "Actual Format: ${env.APPLICATION_NAME}-${env.POM_VERSION}-${env.POM_PACKAGING}"
-                // need to have below formating 
-                // eureka-buildnumber-brnachname.paackaging
-                //eureka-06-master.jar
-                echo "Custom Format: ${env.APPLICATION_NAME}-${currentBuild.number}-${BRANCH_NAME}.${env.POM_PACKAGING}"
-            }
-        }*/
-        stage ('Docker Build and Push') {
-            when {
-                anyOf {
-                    expression {
-                        params.dockerPush == 'yes'
-                    }
-                }
-            }
-            steps {
-                // doker build -t name: tag 
-                script {
-                    dockerBuildandPush().call()
-                }
-
-            }
-        }
-        stage ('Deploy to Dev') {
-            when {
-                expression {
-                    params.deployToDev == 'yes'
-                }
-            }
-            steps {
-                script {
-                    imageValidation().call()
-                    dockerDeploy('dev', '5761' , '8761').call()
-                    echo "Deployed to Dev Succesfully!!!!"
-                }
-            }
-        }
-        stage ('Deploy to Test') {
-            when {
-                expression {
-                    params.deployToTest == 'yes'
-                }
-            }
-            steps {
-                script {
-                    imageValidation().call()
-                    echo "***** Entering Test Environment *****"
-                    dockerDeploy('tst', '6761', '8761').call()
-                }
-            }
-        }
-        stage ('Deploy to Stage') {
-            when {
-                expression {
-                    params.deployToStage == 'yes'
-                }
-            }
-            steps {
-                script {
-                    imageValidation().call()
-                    dockerDeploy('stage', '7761', '8761').call()
-                }
-            }
-        } 
-        stage ('Deploy to Prod') {
-            when {
-                // deployToProd === yes "and" branch "release/*****" 
-                allOf {
+            stage ('Build'){
+                when {
                     anyOf {
                         expression {
-                            params.deployToProd == 'yes'
+                            params.buildOnly == 'yes'
+                        // params.dockerPush == 'yes'
                         }
                     }
+                }
+                // Application Build happens here
+                steps { // jenkins env variable no need of env 
+                    script {
+                        //buildApp().call()
+                        echo "********* Executing Addition Method**********"
+                        println docker.add(8,9)
+                        docker.buildApp("${env.APPLICATION_NAME}")
+                    }
+
+                    //-DskipTests=true 
+                }
+            }
+            stage ('Unit Tests') {
+                when {
                     anyOf {
-                        branch 'release/*'
-                        // only tags with vx.x.x should deploy to prod
+                        expression {
+                            params.buildOnly == 'yes'
+                            params.dockerPush == 'yes'
+                        }
+                    }
+                }
+                steps {
+                    echo "Performing Unit tests for ${env.APPLICATION_NAME} application"
+                    sh "mvn test"
+                }
+                post {
+                    always {
+                        junit 'target/surefire-reports/*.xml'
                     }
                 }
             }
-            steps {
-                timeout(time: 300, unit: 'SECONDS') {
-                    input message: "Deploying ${env.APPLICATION_NAME} to prod ????", ok: 'yes', submitter: 'suresh'
+            stage ('Sonar') {
+                when {
+                        expression {
+                            params.scanOnly == 'yes'  
+                        }
                 }
-                script {
-                    imageValidation().call()
-                    dockerDeploy('prod', '8761', '8761').call()
+                steps {
+                    echo "Starting Sonarqube With Quality Gates"
+                    withSonarQubeEnv('SonarQube'){ // manage jenkins > configure  > sonarqube scanner
+                        sh """
+                            mvn clean verify sonar:sonar \
+                                -Dsonar.projectKey=i27-eureka \
+                                -Dsonar.host.url=${env.SONAR_URL} \
+                                -Dsonar.login=${SONAR_TOKEN}
+                        """
+                    }
+                    timeout (time: 2, unit: 'MINUTES') { // NANOSECONDS, SECONDS , MINUTES , HOURS, DAYS
+                        script {
+                            waitForQualityGate abortPipeline: true
+                        }
+                    } 
+
+                
                 }
             }
-        }
-        stage ('clean'){
-            steps {
-                cleanWs()
+            /*
+            stage ('Docker Format') {
+                steps {
+                    // Tell me, how can i read a pom.xml from jenkinfile
+                    echo "Actual Format: ${env.APPLICATION_NAME}-${env.POM_VERSION}-${env.POM_PACKAGING}"
+                    // need to have below formating 
+                    // eureka-buildnumber-brnachname.paackaging
+                    //eureka-06-master.jar
+                    echo "Custom Format: ${env.APPLICATION_NAME}-${currentBuild.number}-${BRANCH_NAME}.${env.POM_PACKAGING}"
+                }
+            }*/
+            stage ('Docker Build and Push') {
+                when {
+                    anyOf {
+                        expression {
+                            params.dockerPush == 'yes'
+                        }
+                    }
+                }
+                steps {
+                    // doker build -t name: tag 
+                    script {
+                        dockerBuildandPush().call()
+                    }
+
+                }
+            }
+            stage ('Deploy to Dev') {
+                when {
+                    expression {
+                        params.deployToDev == 'yes'
+                    }
+                }
+                steps {
+                    script {
+                        imageValidation().call()
+                        dockerDeploy('dev', '5761' , '8761').call()
+                        echo "Deployed to Dev Succesfully!!!!"
+                    }
+                }
+            }
+            stage ('Deploy to Test') {
+                when {
+                    expression {
+                        params.deployToTest == 'yes'
+                    }
+                }
+                steps {
+                    script {
+                        imageValidation().call()
+                        echo "***** Entering Test Environment *****"
+                        dockerDeploy('tst', '6761', '8761').call()
+                    }
+                }
+            }
+            stage ('Deploy to Stage') {
+                when {
+                    expression {
+                        params.deployToStage == 'yes'
+                    }
+                }
+                steps {
+                    script {
+                        imageValidation().call()
+                        dockerDeploy('stage', '7761', '8761').call()
+                    }
+                }
+            } 
+            stage ('Deploy to Prod') {
+                when {
+                    // deployToProd === yes "and" branch "release/*****" 
+                    allOf {
+                        anyOf {
+                            expression {
+                                params.deployToProd == 'yes'
+                            }
+                        }
+                        anyOf {
+                            branch 'release/*'
+                            // only tags with vx.x.x should deploy to prod
+                        }
+                    }
+                }
+                steps {
+                    timeout(time: 300, unit: 'SECONDS') {
+                        input message: "Deploying ${env.APPLICATION_NAME} to prod ????", ok: 'yes', submitter: 'suresh'
+                    }
+                    script {
+                        imageValidation().call()
+                        dockerDeploy('prod', '8761', '8761').call()
+                    }
+                }
+            }
+            stage ('clean'){
+                steps {
+                    cleanWs()
+                    }
                 }
             }
         }
     }
-}
 // This method will build image and push to registry
 def dockerBuildandPush(){
     return {
