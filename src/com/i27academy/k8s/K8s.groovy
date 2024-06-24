@@ -5,6 +5,7 @@ class K8s {
     K8s(jenkins) {
         this.jenkins = jenkins
     }
+    
     def auth_login () {
         jenkins.sh '''#!/bin/bash
         echo "Authenticating method for cluster login"
