@@ -9,42 +9,35 @@ def call(Map pipelineParams) {
     pipeline {
         agent any
         parameters {
-            choice(
-                name: 'buildOnly',
+            choice(name: 'buildOnly',
                 choices: 'no\nyes',
                 description: 'This will only build the application'
             )
-            choice(
-                name: 'scanOnly',
+            choice(name: 'scanOnly',
                 choices: 'no\nyes',
                 description: 'This will Scan the application'
             )
-            choice(
-                name: 'dockerPush',
+            choice(name: 'dockerPush',
                 choices: 'no\nyes',
                 description: 'This will build the app, docker build, docker push'
             )
-            choice(
-                name: 'deployToDev',
+            choice(name: 'deployToDev',
                 choices: 'no\nyes',
                 description: 'This will Deploy the app to Dev env'
             )
-            choice(
-                name: 'deployToTest',
+            choice(name: 'deployToTest',
                 choices: 'no\nyes',
                 description: 'This will Deploy the app to Test env'
             )
-            choice(
-                name: 'deployToStage',
+            choice(name: 'deployToStage',
                 choices: 'no\nyes',
                 description: 'This will Deploy the app to Stage env'
             )
-            choice(
-                name: 'deployToProd',
+            choice(name: 'deployToProd',
                 choices: 'no\nyes',
                 description: 'This will Deploy the app to Prod env'
             )
-    }
+        }
         environment {
             APPLICATION_NAME = "${pipelineParams.appName}"
             //APPLICATION_NAME = "eureka"
@@ -52,10 +45,23 @@ def call(Map pipelineParams) {
             POM_PACKAGING = readMavenPom().getPackaging()
             //version+ packaging
             DOCKER_HUB = "docker.io/sureshindrala"
-            DOCKER_CREDS = credentials("dockerhub_creds")
+            DOCKER_CREDS = credentials('i27devopsb2_docker_creds')
             SONAR_URL = "http://34.66.190.70:9000/"
             SONAR_TOKEN = credentials('sonar_creds')
-           
+         /*   GKE_DEV_CLUSTER_NAME = "cart-cluster"
+            GKE_DEV_ZONE = "us-west1-a"
+            GKE_DEV_PROJECT = "delta-sprite-416312"
+            GKE_TST_CLUSTER_NAME = "tst-cluster"
+            GKE_TST_ZONE = "us-west1-b"
+            GKE_TST_PROJECT = "nice-carving-4118012"   
+            DOCKER_IMAGE_TAG = sh(script: 'git log -1 --pretty=%h', returnStdout:true).trim()
+            K8S_DEV_FILE = "k8s_dev.yaml"
+            K8S_TST_FILE = "k8s_tst.yaml"
+            K8S_STAGE_FILE = "k8s_stg.yaml"
+            K8S_PROD_FILE = "k8s_prd.yaml"
+            DEV_NAMESPACE = "cart-dev-ns"
+            TEST_NAMESPACE = "cart-tst-ns"
+            */
         }
         tools {
             maven 'Maven-3.8.8'
@@ -67,7 +73,7 @@ def call(Map pipelineParams) {
                     echo "Executing in Google Cloud auth stage"
                     script {
                         //gke_cluster_name, gke_zone, gke_project 
-                        k8s.auth_login()
+                        k8s.auth_login("${env.GKE_DEV_CLUSTER_NAME}", "${env.GKE_DEV_ZONE}", "${env.GKE_DEV_PROJECT}")
                     }  
                 }
             }
@@ -174,8 +180,8 @@ def call(Map pipelineParams) {
                         imageValidation().call()
                         def docker_image = "${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${env.DOCKER_IMAGE_TAG}"
                         // dockerDeploy('dev', '5761' , '8761').call()
-                        //k8s.auth_login("${env.GKE_DEV_CLUSTER_NAME}", "${env.GKE_DEV_ZONE}", "${env.GKE_DEV_PROJECT}")
-                        //k8s.k8sdeploy("${env.K8S_DEV_FILE}", docker_image, "${env.DEV_NAMESPACE}")
+                        k8s.auth_login("${env.GKE_DEV_CLUSTER_NAME}", "${env.GKE_DEV_ZONE}", "${env.GKE_DEV_PROJECT}")
+                        k8s.k8sdeploy("${env.K8S_DEV_FILE}", docker_image, "${env.DEV_NAMESPACE}")
                         echo "Deployed to Dev Succesfully!!!!"
                     }
                 }
@@ -191,8 +197,8 @@ def call(Map pipelineParams) {
                         imageValidation().call()
                         def docker_image = "${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${env.DOCKER_IMAGE_TAG}"
                         // dockerDeploy('dev', '5761' , '8761').call()
-                        //k8s.auth_login("${env.GKE_DEV_CLUSTER_NAME}", "${env.GKE_DEV_ZONE}", "${env.GKE_DEV_PROJECT}")
-                        //k8s.k8sdeploy("${env.K8S_TST_FILE}", docker_image)
+                        k8s.auth_login("${env.GKE_DEV_CLUSTER_NAME}", "${env.GKE_DEV_ZONE}", "${env.GKE_DEV_PROJECT}")
+                        k8s.k8sdeploy("${env.K8S_TST_FILE}", docker_image)
                         echo "Deployed to TEST Succesfully!!!!"
 
                     }
@@ -228,7 +234,7 @@ def call(Map pipelineParams) {
                 }
                 steps {
                     timeout(time: 300, unit: 'SECONDS') {
-                        input message: "Deploying ${env.APPLICATION_NAME} to prod ????", ok: 'yes', submitter: 'Greeshma'
+                        input message: "Deploying ${env.APPLICATION_NAME} to prod ????", ok: 'yes', submitter: 'greesh'
                     }
                     script {
                         imageValidation().call()
