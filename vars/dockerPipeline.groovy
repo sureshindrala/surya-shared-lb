@@ -213,8 +213,8 @@ def call (Map pipelineParams) {
         }
     }
 }
-    // This method will build image and push to registry
-    def dockerBuildandPush(){
+
+def dockerBuildandPush(){
         return {
                 echo "******************************** Build Docker Image ********************************"
                 sh "cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd"
@@ -229,7 +229,7 @@ def call (Map pipelineParams) {
     }
 
     // This method is developed for Deploying our App in different environments
-    def dockerDeploy(envDeploy, hostPort, contPort) {
+def dockerDeploy(envDeploy, hostPort, contPort) {
         return {
         echo "******************************** Deploying to $envDeploy Environment ********************************"
         withCredentials([usernamePassword(credentialsId: 'docker_env_creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
@@ -259,11 +259,11 @@ def call (Map pipelineParams) {
             sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker run -d -p $hostPort:$contPort --name ${env.APPLICATION_NAME}-$envDeploy ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
             }
         }
-        }
-        
     }
+        
+}
 
-    def imageValidation() {
+def imageValidation() {
         return {
             println ("Pulling the docker image")
             try {
