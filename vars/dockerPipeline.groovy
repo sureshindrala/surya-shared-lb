@@ -200,8 +200,8 @@ def call(Map PipelineParams) {
             
         }
     }
-    def dockerBuildandPush() {
-        return {
+def dockerBuildandPush() {
+    return {
             echo "******************************** Build Docker Image ********************************"
             sh "cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd"
             sh "ls -la ./.cicd"
@@ -213,8 +213,8 @@ def call(Map PipelineParams) {
             echo "Pushed the image succesfully!!!"
         }
     }
-    def dockerDeploy(envDeploy,hostPort,contPort){
-        return {
+def dockerDeploy(envDeploy,hostPort,contPort){
+    return {
         echo "******************************** Deploying to $envDeploy Environment ********************************"
         withCredentials([usernamePassword(credentialsId: 'dockerhub_creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
         script {
@@ -236,8 +236,8 @@ def call(Map PipelineParams) {
 
         }
     }
-    def imageValidation() {
-        return {
+def imageValidation() {
+    return {
             println ("Pulling the docker image")
             try {
             sh "docker pull ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}" 
