@@ -4,71 +4,71 @@ import com.i27academy.builds.Docker
 def call(Map pipelineParams) {
     Docker docker = new Docker(this)
     pipeline {
-        agent {
-            label "k8s-slave"
-        }
-        parameters {
-            choice(name: 'buildOnly',
-                choices: 'no\nyes',
-                description: 'This will only build the application'
-            )
-            choice(name: 'scanOnly',
-                choices: 'no\nyes',
-                description: 'This will Scan the application'
-            )
-            choice(name: 'dockerPush',
-                choices: 'no\nyes',
-                description: 'This will build the app, docker build, docker push'
-            )
-            choice(name: 'deployToDev',
-                choices: 'no\nyes',
-                description: 'This will Deploy the app to Dev env'
-            )
-            choice(name: 'deployToTest',
-                choices: 'no\nyes',
-                description: 'This will Deploy the app to Test env'
-            )
-            choice(name: 'deployToStage',
-                choices: 'no\nyes',
-                description: 'This will Deploy the app to Stage env'
-            )
-            choice(name: 'deployToProd',
-                choices: 'no\nyes',
-                description: 'This will Deploy the app to Prod env'
-            )
-        }
-        environment {
-            APPLICATION_NAME = "${pipelineParams.appName}"
-            //APPLICATION_NAME = "eureka"
-            POM_VERSION = readMavenPom().getVersion()
-            POM_PACKAGING = readMavenPom().getPackaging()
-            //version+ packaging
-            DOCKER_HUB = "docker.io/sureshindrala"
-            DOCKER_CREDS = credentials("dockerhub_creds")
-            SONAR_URL = "http://34.66.190.70:9000/"  
-        }
-        tools {
-            maven 'Maven-3.8.8'
-            jdk 'Jdk-17'
-        }
-        stages {
-            stage ('Build'){
-                when {
-                    anyOf {
-                        expression {
-                            params.buildOnly == 'yes'
-                        // params.dockerPush == 'yes'
-                        }
+    agent {
+        label 'k8s-slave'
+    }
+    parameters {
+        choice(name: 'buildOnly',
+            choices: 'no\nyes',
+            description: 'This will only build the application'
+        )
+        choice(name: 'scanOnly',
+            choices: 'no\nyes',
+            description: 'This will Scan the application'
+        )
+        choice(name: 'dockerPush',
+            choices: 'no\nyes',
+            description: 'This will build the app, docker build, docker push'
+        )
+        choice(name: 'deployToDev',
+            choices: 'no\nyes',
+            description: 'This will Deploy the app to Dev env'
+        )
+        choice(name: 'deployToTest',
+            choices: 'no\nyes',
+            description: 'This will Deploy the app to Test env'
+        )
+        choice(name: 'deployToStage',
+            choices: 'no\nyes',
+            description: 'This will Deploy the app to Stage env'
+        )
+        choice(name: 'deployToProd',
+            choices: 'no\nyes',
+            description: 'This will Deploy the app to Prod env'
+        )
+    }
+    environment {
+        APPLICATION_NAME = "${pipelineParams.appName}"
+        //APPLICATION_NAME = "eureka"
+        POM_VERSION = readMavenPom().getVersion()
+        POM_PACKAGING = readMavenPom().getPackaging()
+        //version+ packaging
+        DOCKER_HUB = "docker.io/sureshindrala"
+        DOCKER_CREDS = credentials("dockerhub_creds")
+        SONAR_URL = "http://34.66.190.70:9000/"  
+    }
+    tools {
+        maven 'Maven-3.8.8'
+        jdk 'Jdk-17'
+    }
+    stages {
+        stage ('Build'){
+            when {
+                anyOf {
+                    expression {
+                        params.buildOnly == 'yes'
+                       // params.dockerPush == 'yes'
                     }
                 }
-                // Application Build happens here
-                steps { // jenkins env variable no need of env 
-                    script {
-                        //buildApp().call()
-                        echo "********* Executing Addition Method**********"
-                        println docker.add(8,9)
-                        docker.buildApp("${env.APPLICATION_NAME}")
-                    }
+            }
+            // Application Build happens here
+            steps { // jenkins env variable no need of env 
+                script {
+                    //buildApp().call()
+                    echo "********* Executing Addition Method**********"
+                    println docker.add(8,9)
+                    docker.buildApp("${env.APPLICATION_NAME}")
+                }
 
                     //-DskipTests=true 
                 }
