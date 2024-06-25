@@ -1,6 +1,5 @@
 import com.i27academy.builds.Docker
 
-
 def call(Map pipelineParams) {
     Docker docker = new Docker(this)
     pipeline {
@@ -70,216 +69,214 @@ def call(Map pipelineParams) {
                     docker.buildApp("${env.APPLICATION_NAME}")
                 }
 
-                    //-DskipTests=true 
+                //-DskipTests=true 
+            }
+        }
+        stage ('Unit Tests') {
+            when {
+                anyOf {
+                    expression {
+                        params.buildOnly == 'yes'
+                        params.dockerPush == 'yes'
+                    }
                 }
             }
-            stage ('Unit Tests') {
-                when {
+            steps {
+                echo "Performing Unit tests for ${env.APPLICATION_NAME} application"
+                sh "mvn test"
+            }
+            post {
+                always {
+                    junit 'target/surefire-reports/*.xml'
+                }
+            }
+        }
+        stage ('Sonar') {
+            when {
+                    expression {
+                        params.scanOnly == 'yes'  
+                    }
+            }
+            steps {
+                echo "Starting Sonarqube With Quality Gates"
+                withSonarQubeEnv('SonarQube'){ // manage jenkins > configure  > sonarqube scanner
+                    sh """
+                        mvn clean verify sonar:sonar \
+                            -Dsonar.projectKey=i27-eureka \
+                            -Dsonar.host.url=${env.SONAR_URL} \
+                            -Dsonar.login=${SONAR_TOKEN}
+                    """
+                }
+                timeout (time: 2, unit: 'MINUTES') { // NANOSECONDS, SECONDS , MINUTES , HOURS, DAYS
+                    script {
+                        waitForQualityGate abortPipeline: true
+                    }
+                } 
+
+            
+            }
+        }
+        /*
+        stage ('Docker Format') {
+            steps {
+                // Tell me, how can i read a pom.xml from jenkinfile
+                echo "Actual Format: ${env.APPLICATION_NAME}-${env.POM_VERSION}-${env.POM_PACKAGING}"
+                // need to have below formating 
+                // eureka-buildnumber-brnachname.paackaging
+                //eureka-06-master.jar
+                echo "Custom Format: ${env.APPLICATION_NAME}-${currentBuild.number}-${BRANCH_NAME}.${env.POM_PACKAGING}"
+            }
+        }*/
+        stage ('Docker Build and Push') {
+            when {
+                anyOf {
+                    expression {
+                        params.dockerPush == 'yes'
+                    }
+                }
+            }
+            steps {
+                // doker build -t name: tag 
+                script {
+                    dockerBuildandPush().call()
+                }
+
+            }
+        }
+        stage ('Deploy to Dev') {
+            when {
+                expression {
+                    params.deployToDev == 'yes'
+                }
+            }
+            steps {
+                script {
+                    imageValidation().call()
+                    dockerDeploy('dev', '5761' , '8761').call()
+                    echo "Deployed to Dev Succesfully!!!!"
+                }
+            }
+        }
+        stage ('Deploy to Test') {
+            when {
+                expression {
+                    params.deployToTest == 'yes'
+                }
+            }
+            steps {
+                script {
+                    imageValidation().call()
+                    echo "***** Entering Test Environment *****"
+                    dockerDeploy('tst', '6761', '8761').call()
+                }
+            }
+        }
+        stage ('Deploy to Stage') {
+            when {
+                expression {
+                    params.deployToStage == 'yes'
+                }
+            }
+            steps {
+                script {
+                    imageValidation().call()
+                    dockerDeploy('stage', '7761', '8761').call()
+                }
+            }
+        } 
+        stage ('Deploy to Prod') {
+            when {
+                // deployToProd === yes "and" branch "release/*****" 
+                allOf {
                     anyOf {
                         expression {
-                            params.buildOnly == 'yes'
-                            params.dockerPush == 'yes'
+                            params.deployToProd == 'yes'
                         }
                     }
-                }
-                steps {
-                    echo "Performing Unit tests for ${env.APPLICATION_NAME} application"
-                    sh "mvn test"
-                }
-                post {
-                    always {
-                        junit 'target/surefire-reports/*.xml'
-                    }
-                }
-            }
-            stage ('Sonar') {
-                when {
-                        expression {
-                            params.scanOnly == 'yes'  
-                        }
-                }
-                steps {
-                    echo "Starting Sonarqube With Quality Gates"
-                    withSonarQubeEnv('SonarQube'){ // manage jenkins > configure  > sonarqube scanner
-                        sh """
-                            mvn clean verify sonar:sonar \
-                                -Dsonar.projectKey=i27-eureka \
-                                -Dsonar.host.url=${env.SONAR_URL} \
-                                -Dsonar.login=${SONAR_TOKEN}
-                        """
-                    }
-                    timeout (time: 2, unit: 'MINUTES') { // NANOSECONDS, SECONDS , MINUTES , HOURS, DAYS
-                        script {
-                            waitForQualityGate abortPipeline: true
-                        }
-                    } 
-
-                
-                }
-            }
-            /*
-            stage ('Docker Format') {
-                steps {
-                    // Tell me, how can i read a pom.xml from jenkinfile
-                    echo "Actual Format: ${env.APPLICATION_NAME}-${env.POM_VERSION}-${env.POM_PACKAGING}"
-                    // need to have below formating 
-                    // eureka-buildnumber-brnachname.paackaging
-                    //eureka-06-master.jar
-                    echo "Custom Format: ${env.APPLICATION_NAME}-${currentBuild.number}-${BRANCH_NAME}.${env.POM_PACKAGING}"
-                }
-            }*/
-            stage ('Docker Build and Push') {
-                when {
                     anyOf {
-                        expression {
-                            params.dockerPush == 'yes'
-                        }
-                    }
-                }
-                steps {
-                    // doker build -t name: tag 
-                    script {
-                        dockerBuildandPush().call()
-                    }
-
-                }
-            }
-            stage ('Deploy to Dev') {
-                when {
-                    expression {
-                        params.deployToDev == 'yes'
-                    }
-                }
-                steps {
-                    script {
-                        imageValidation().call()
-                        dockerDeploy('dev', '5761' , '8761').call()
-                        echo "Deployed to Dev Succesfully!!!!"
+                        branch 'release/*'
+                        // only tags with vx.x.x should deploy to prod
                     }
                 }
             }
-            stage ('Deploy to Test') {
-                when {
-                    expression {
-                        params.deployToTest == 'yes'
-                    }
+            steps {
+                timeout(time: 300, unit: 'SECONDS') {
+                    input message: "Deploying ${env.APPLICATION_NAME} to prod ????", ok: 'yes', submitter: 'suresh'
                 }
-                steps {
-                    script {
-                        imageValidation().call()
-                        echo "***** Entering Test Environment *****"
-                        dockerDeploy('tst', '6761', '8761').call()
-                    }
+                script {
+                    imageValidation().call()
+                    dockerDeploy('prod', '8761', '8761').call()
                 }
             }
-            stage ('Deploy to Stage') {
-                when {
-                    expression {
-                        params.deployToStage == 'yes'
-                    }
-                }
-                steps {
-                    script {
-                        imageValidation().call()
-                        dockerDeploy('stage', '7761', '8761').call()
-                    }
-                }
-            } 
-            stage ('Deploy to Prod') {
-                when {
-                    // deployToProd === yes "and" branch "release/*****" 
-                    allOf {
-                        anyOf {
-                            expression {
-                                params.deployToProd == 'yes'
-                            }
-                        }
-                        anyOf {
-                            branch 'release/*'
-                            // only tags with vx.x.x should deploy to prod
-                        }
-                    }
-                }
-                steps {
-                    timeout(time: 300, unit: 'SECONDS') {
-                        input message: "Deploying ${env.APPLICATION_NAME} to prod ????", ok: 'yes', submitter: 'suresh'
-                    }
-                    script {
-                        imageValidation().call()
-                        dockerDeploy('prod', '8761', '8761').call()
-                    }
-                }
-            }
-            stage ('clean'){
-                steps {
-                    cleanWs()
-                    }
+        }
+        stage ('clean'){
+            steps {
+                cleanWs()
                 }
             }
         }
     }
-    // This method will build image and push to registry
-    def dockerBuildandPush(){
-        return {
-                echo "******************************** Build Docker Image ********************************"
-                sh "cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd"
-                sh "ls -la ./.cicd"
-                sh "docker build --force-rm --no-cache --pull --rm=true --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} -t ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT} ./.cicd"
-                echo "******************************** Login to Docker Repo ********************************"
-                sh "docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}"
-                echo "******************************** Docker Push ********************************"
-                sh "docker push ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
-                echo "Pushed the image succesfully!!!"
-        }
+}
+// This method will build image and push to registry
+def dockerBuildandPush(){
+    return {
+            echo "******************************** Build Docker Image ********************************"
+            sh "cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd"
+            sh "ls -la ./.cicd"
+            sh "docker build --force-rm --no-cache --pull --rm=true --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} -t ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT} ./.cicd"
+            echo "******************************** Login to Docker Repo ********************************"
+            sh "docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}"
+            echo "******************************** Docker Push ********************************"
+            sh "docker push ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
+            echo "Pushed the image succesfully!!!"
     }
+}
 
-    // This method is developed for Deploying our App in different environments
-    def dockerDeploy(envDeploy, hostPort, contPort) {
-        return {
-        echo "******************************** Deploying to $envDeploy Environment ********************************"
-        withCredentials([usernamePassword(credentialsId: 'docker_env_creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
-            // some block
-            // With the help of this block, ,the slave will be connecting to docker-vm and execute the commands to create the containers.
-            //sshpass -p ssh -o StrictHostKeyChecking=no user@host command_to_run
-            //sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} hostname -i" 
-            
-        script {
-            // Pull the image on the Docker Server
-            sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker pull ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
-            
-            try {
-                // Stop the Container
-                echo "Stoping the Container"
-                sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker stop ${env.APPLICATION_NAME}-$envDeploy"
-
-                // Remove the Container 
-                echo "Removing the Container"
-                sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker rm ${env.APPLICATION_NAME}-$envDeploy"
-                } catch(err) {
-                echo "Caught the Error: $err"
-            }
-
-            // Create a Container 
-            echo "Creating the Container"
-            sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker run -d -p $hostPort:$contPort --name ${env.APPLICATION_NAME}-$envDeploy ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
-            }
-        }
-        }
+// This method is developed for Deploying our App in different environments
+def dockerDeploy(envDeploy, hostPort, contPort) {
+    return {
+    echo "******************************** Deploying to $envDeploy Environment ********************************"
+    withCredentials([usernamePassword(credentialsId: 'docker_env_creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
+        // some block
+        // With the help of this block, ,the slave will be connecting to docker-vm and execute the commands to create the containers.
+        //sshpass -p ssh -o StrictHostKeyChecking=no user@host command_to_run
+        //sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} hostname -i" 
         
-    }
+    script {
+        // Pull the image on the Docker Server
+        sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker pull ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
+        
+        try {
+            // Stop the Container
+            echo "Stoping the Container"
+            sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker stop ${env.APPLICATION_NAME}-$envDeploy"
 
-    def imageValidation() {
-        return {
-            println ("Pulling the docker image")
-            try {
-            sh "docker pull ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}" 
-            }
-            catch (Exception e) {
-                println("OOPS!, docker images with this tag is not available")
-                buildApp().call()
-                dockerBuildandPush().call()
-            }
+            // Remove the Container 
+            echo "Removing the Container"
+            sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker rm ${env.APPLICATION_NAME}-$envDeploy"
+             } catch(err) {
+            echo "Caught the Error: $err"
         }
-    } 
 
+        // Create a Container 
+        echo "Creating the Container"
+        sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker run -d -p $hostPort:$contPort --name ${env.APPLICATION_NAME}-$envDeploy ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
+        }
+    }
+    }
+    
+}
 
+def imageValidation() {
+    return {
+        println ("Pulling the docker image")
+        try {
+        sh "docker pull ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}" 
+        }
+        catch (Exception e) {
+            println("OOPS!, docker images with this tag is not available")
+            buildApp().call()
+            dockerBuildandPush().call()
+        }
+    }
+} 
