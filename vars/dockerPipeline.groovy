@@ -50,7 +50,7 @@ def call(Map pipelineParams) {
         }
         tools {
             maven 'Maven-3.8.8'
-            jdk 'JDK-17'
+            jdk 'JdK-17'
         }
         stages {
             stage ('Build'){
