@@ -213,12 +213,12 @@ def call(Map pipelineParams) {
             }
             stage ('clean'){
                 steps {
-                    cleanWs()
-                    }
+                  cleanWs()
                 }
             }
         }
     }
+}
 
 def dockerBuildandPush(){
     return {
