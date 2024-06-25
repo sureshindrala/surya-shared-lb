@@ -219,10 +219,7 @@ def call(Map pipelineParams) {
         }
     }
 }
-// This Jenkinsfile is for the Eureka Deployment.
 
-
-// This method will build image and push to registry
 def dockerBuildandPush(){
     return {
             echo "******************************** Build Docker Image ********************************"
