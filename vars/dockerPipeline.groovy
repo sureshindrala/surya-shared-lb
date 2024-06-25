@@ -212,67 +212,66 @@ def call (Map pipelineParams) {
             }
         }
     }
-
     // This method will build image and push to registry
-    def dockerBuildandPush(){
+def dockerBuildandPush(){
         return {
-                echo "******************************** Build Docker Image ********************************"
-                sh "cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd"
-                sh "ls -la ./.cicd"
-                sh "docker build --force-rm --no-cache --pull --rm=true --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} -t ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT} ./.cicd"
-                echo "******************************** Login to Docker Repo ********************************"
-                sh "docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}"
-                echo "******************************** Docker Push ********************************"
-                sh "docker push ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
-                echo "Pushed the image succesfully!!!"
+            echo "******************************** Build Docker Image ********************************"
+            sh "cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd"
+            sh "ls -la ./.cicd"
+            sh "docker build --force-rm --no-cache --pull --rm=true --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} -t ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT} ./.cicd"
+            echo "******************************** Login to Docker Repo ********************************"
+            sh "docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}"
+            echo "******************************** Docker Push ********************************"
+            sh "docker push ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
+            echo "Pushed the image succesfully!!!"
         }
     }
 
     // This method is developed for Deploying our App in different environments
-    def dockerDeploy(envDeploy, hostPort, contPort) {
-        return {
-        echo "******************************** Deploying to $envDeploy Environment ********************************"
-        withCredentials([usernamePassword(credentialsId: 'docker_env_creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
+def dockerDeploy(envDeploy, hostPort, contPort) {
+    return {
+    echo "******************************** Deploying to $envDeploy Environment ********************************"
+    withCredentials([usernamePassword(credentialsId: 'docker_env_creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
             // some block
             // With the help of this block, ,the slave will be connecting to docker-vm and execute the commands to create the containers.
             //sshpass -p ssh -o StrictHostKeyChecking=no user@host command_to_run
             //sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} hostname -i" 
             
-        script {
+    script {
             // Pull the image on the Docker Server
             sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker pull ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
             
-            try {
+        try {
                 // Stop the Container
-                echo "Stoping the Container"
-                sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker stop ${env.APPLICATION_NAME}-$envDeploy"
+            echo "Stoping the Container"
+            sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker stop ${env.APPLICATION_NAME}-$envDeploy"
 
                 // Remove the Container 
-                echo "Removing the Container"
-                sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker rm ${env.APPLICATION_NAME}-$envDeploy"
-                } catch(err) {
+            echo "Removing the Container"
+            sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker rm ${env.APPLICATION_NAME}-$envDeploy"
+            } catch(err) {
                 echo "Caught the Error: $err"
             }
 
             // Create a Container 
-            echo "Creating the Container"
-            sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker run -d -p $hostPort:$contPort --name ${env.APPLICATION_NAME}-$envDeploy ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
+        echo "Creating the Container"
+        sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker run -d -p $hostPort:$contPort --name ${env.APPLICATION_NAME}-$envDeploy ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
             }
         }
-        }
-        
     }
+        
+}
 
-    def imageValidation() {
-        return {
-            println ("Pulling the docker image")
-            try {
-            sh "docker pull ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}" 
+def imageValidation() {
+    return {
+        println ("Pulling the docker image")
+        try {
+        sh "docker pull ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}" 
             }
-            catch (Exception e) {
-                println("OOPS!, docker images with this tag is not available")
-                buildApp().call()
-                dockerBuildandPush().call()
+        catch (Exception e) {
+            println("OOPS!, docker images with this tag is not available")
+            buildApp().call()
+            dockerBuildandPush().call()
             }
         }
     }
