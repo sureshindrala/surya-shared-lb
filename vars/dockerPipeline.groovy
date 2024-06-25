@@ -212,7 +212,6 @@ def call (Map pipelineParams) {
             }
         }
     }
-}
 
 def dockerBuildandPush(){
         return {
@@ -276,5 +275,5 @@ def imageValidation() {
             }
         }
     }
-
+}
 
