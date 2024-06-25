@@ -213,7 +213,7 @@ def dockerBuildandPush() {
             sh "docker push ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
             echo "Pushed the image succesfully!!!"
         }
-}   
+    }   
 def dockerDeploy(envDeploy,hostPort,contPort){
     return {
         echo "******************************** Deploying to $envDeploy Environment ********************************"
