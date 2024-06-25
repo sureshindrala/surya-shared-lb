@@ -200,6 +200,9 @@ def call(Map PipelineParams) {
             
         }
     }
+} 
+def call(Map PipelineParams) {
+    Docker docker = new Docker(this)
 def dockerBuildandPush() {
     return {
             echo "******************************** Build Docker Image ********************************"
