@@ -185,13 +185,6 @@ def call(Map pipelineParams) {
     }
 }
 
-// Define buildApp function
-def buildApp() {
-    return {
-        echo "Building the application"
-        sh "mvn clean install"
-    }
-}
 
 def dockerBuildandPush() {
     return {
