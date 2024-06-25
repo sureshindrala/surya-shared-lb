@@ -213,7 +213,7 @@ def dockerBuildandPush() {
             echo "Pushed the image succesfully!!!"
         }
 }
-def dockerDeploy(envDeploy,hostPort,contPort){
+/*def dockerDeploy(envDeploy,hostPort,contPort){
     return {
         echo "******************************** Deploying to $envDeploy Environment ********************************"
         withCredentials([usernamePassword(credentialsId: 'dockerhub_creds', passwordVariable: 'PASSWORD', usernameVariable: 'USERNAME')]) {
@@ -235,7 +235,7 @@ def dockerDeploy(envDeploy,hostPort,contPort){
         
 
     }
-}
+} */
 def imageValidation() {
     return {
             println ("Pulling the docker image")
