@@ -212,7 +212,7 @@ def dockerBuildandPush() {
             sh "docker push ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
             echo "Pushed the image succesfully!!!"
         }
-    }
+}
 def dockerDeploy(envDeploy,hostPort,contPort){
     return {
         echo "******************************** Deploying to $envDeploy Environment ********************************"
@@ -231,11 +231,11 @@ def dockerDeploy(envDeploy,hostPort,contPort){
             sh "sshpass -p ${PASSWORD} -v ssh -o StrictHostKeyChecking=no ${USERNAME}@${docker_server_ip} docker run -d -p $hostPort:$contPort --name ${env.APPLICATION_NAME}-$envDeploy ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
              
             }
-         }
+        }
         
 
-        }
     }
+}
 def imageValidation() {
     return {
             println ("Pulling the docker image")
