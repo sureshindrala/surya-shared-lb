@@ -5,7 +5,7 @@ def call(Map pipelineParams) {
     Docker docker = new Docker(this)
     pipeline {
         agent {
-            label 'k8s-slave'
+            label "k8s-slave"
         }
         parameters {
             choice(name: 'buildOnly',
@@ -281,3 +281,5 @@ def call(Map pipelineParams) {
             }
         }
     } 
+
+

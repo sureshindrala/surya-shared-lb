@@ -1,4 +1,4 @@
-package com.i27academy.buils
+package com.i27academy.builds
 
 class caluculator {
     def jenkins
