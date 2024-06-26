@@ -285,6 +285,8 @@ def dockerDeploy(envDeploy, hostPort, contPort) {
 }
 
 def imageValidation() {
+    Docker docker = new Docker(this)
+    K8s k8s = new K8s(this)
     return {
         println ("Pulling the docker image")
         try {
