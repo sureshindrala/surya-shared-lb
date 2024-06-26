@@ -46,7 +46,7 @@ def call(Map pipelineParams) {
             DOCKER_HUB = "docker.io/sureshindrala"
             DOCKER_CREDS = credentials("dockerhub_creds")
             SONAR_URL = "http://34.66.190.70:9000/"
-           // SONAR_TOKEN = credentials('sonar_creds')
+            SONAR_TOKEN = credentials('sonar_creds')
         }
         tools {
             maven 'Maven-3.8.8'
