@@ -9,7 +9,7 @@ class K8s{
         jenkins.sh """#!/bin/bash
         echo "***********Entering in The GKE cluster*******"
         gcloud config set account jenkins@chromatic-craft-424811-h4.iam.gserviceaccount.com 
-        gcloud compute instaces list
+        gcloud compute instances list
         """
     }
 }
