@@ -276,7 +276,7 @@ def imageValidation() {
         try {
         sh "docker pull ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}" 
         }
-        catch (Exception e) {
+        catch (Exception) {
             println("OOPS!, docker images with this tag is not available")
             buildApp().call()
             dockerBuildandPush().call()
