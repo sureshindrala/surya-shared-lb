@@ -54,13 +54,17 @@ def call(Map pipelineParams) {
             jdk 'Jdk-17'
         }
         stages {
-            stage('GKE Authentication')
+            stage('GKE Authentication') {
                 steps{
-                    echo "Executing GKE "
                     script {
+                        echo "Authenticating GKE"
                         k8s.auth_login()
                     }
+                    
+                    
                 }
+            }
+                
             stage ('Build'){
                 when {
                     anyOf {
