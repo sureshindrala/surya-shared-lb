@@ -10,6 +10,8 @@ class K8s{
         echo "***********Entering in The GKE cluster*******"
         gcloud config set account jenkins@chromatic-craft-424811-h4.iam.gserviceaccount.com 
         gcloud compute instances list
+        echo "****** Nodes List ***********"
+        kubectl get nodes
         """
     }
 }
