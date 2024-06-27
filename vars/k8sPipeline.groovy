@@ -39,8 +39,8 @@ def call(Map pipelineParams) {
             )
         }
         environment {
-            //APPLICATION_NAME = "${pipelineParams.appName}"
-            APPLICATION_NAME = "eureka"
+            APPLICATION_NAME = "${pipelineParams.appName}"
+            //APPLICATION_NAME = "eureka"
             POM_VERSION = readMavenPom().getVersion()
             POM_PACKAGING = readMavenPom().getPackaging()
             //version+ packaging
@@ -48,6 +48,15 @@ def call(Map pipelineParams) {
             DOCKER_CREDS = credentials("dockerhub_creds")
             SONAR_URL = "http://34.66.190.70:9000/"
             SONAR_TOKEN = credentials('sonar_creds')
+            GKE_DEV_CLUSTER_NAME = "cart-cluster"
+            GKE_DEV_NAME = "us-west1-a"
+            GKE_DEV_PROJECT = "chromatic-craft-424811-h4"
+            DOCKER_IMAGE_TAG = sh(script: 'git log -1 --pretty=%h', returnStdout:true).trim()
+            K8S_DEV_FILE = "k8s_dev.yaml"
+
+            
+
+
         }
         tools {
             maven 'Maven-3.8.8'
@@ -166,9 +175,10 @@ def call(Map pipelineParams) {
                 steps {
                     script {
                         imageValidation().call()
+                        def docker_image = "${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${env.DOCKER_IMAGE_TAG}"
                        // dockerDeploy('dev', '5761' , '8761').call()
-                        k8s.auth_login()
-                        k8s.k8sdeploy()
+                        k8s.auth_login("${env.GKE_DEV_CLUSTER_NAME}", "${env.GKE_DEV_ZONE}", "${env.GKE_DEV_PROJECT}")
+                        k8s.k8sdeploy("${env.K8S_DEV_FILE}")
                         echo "Deployed to Dev Succesfully!!!!"
                     }
                 }
@@ -240,11 +250,11 @@ def dockerBuildandPush(){
             echo "******************************** Build Docker Image ********************************"
             sh "cp ${workspace}/target/i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} ./.cicd"
             sh "ls -la ./.cicd"
-            sh "docker build --force-rm --no-cache --pull --rm=true --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} -t ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT} ./.cicd"
+            sh "docker build --force-rm --no-cache --pull --rm=true --build-arg JAR_SOURCE=i27-${env.APPLICATION_NAME}-${env.POM_VERSION}.${env.POM_PACKAGING} -t ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${DOCKER_IMAGE_TAG} ./.cicd"
             echo "******************************** Login to Docker Repo ********************************"
             sh "docker login -u ${DOCKER_CREDS_USR} -p ${DOCKER_CREDS_PSW}"
             echo "******************************** Docker Push ********************************"
-            sh "docker push ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${GIT_COMMIT}"
+            sh "docker push ${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${DOCKER_IMAGE_TAG}"
             echo "Pushed the image succesfully!!!"
     }
 }

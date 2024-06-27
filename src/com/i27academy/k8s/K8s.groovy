@@ -12,12 +12,14 @@ class K8s{
         gcloud compute instances list
         echo "****** Nodes List ***********"
         kubectl get nodes
+        
         """
     }
-    def k8sdeploy() {
+    def k8sdeploy(fileName,docker_image) {
         jenkins.sh """#!/bin/bash
         echo "Excuting K8S Deploy method"
-        kubectl apply -f ./.cicd/k8s_dev.yaml
+        echo "Final Image Tag is $docker_image"
+        kubectl apply -f ./.cicd/$fileName
         """
     }
 }
