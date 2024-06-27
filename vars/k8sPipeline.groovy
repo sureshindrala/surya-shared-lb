@@ -175,7 +175,7 @@ def call(Map pipelineParams) {
                         def docker_image = "${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${env.DOCKER_IMAGE_TAG}"
                        // dockerDeploy('dev', '5761' , '8761').call()
                         k8s.auth_login()
-                        k8s.k8sdeploy("${env.K8S_DEV_FILE}")
+                        k8s.k8sdeploy()
                         echo "Deployed to Dev Succesfully!!!!"
                     }
                 }
