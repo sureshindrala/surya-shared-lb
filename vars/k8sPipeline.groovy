@@ -53,10 +53,7 @@ def call(Map pipelineParams) {
             GKE_DEV_PROJECT = "chromatic-craft-424811-h4"
             DOCKER_IMAGE_TAG = sh(script: 'git log -1 --pretty=%h', returnStdout:true).trim()
             K8S_DEV_FILE = "k8s_dev.yaml"
-
-            
-
-
+      
         }
         tools {
             maven 'Maven-3.8.8'
@@ -177,7 +174,7 @@ def call(Map pipelineParams) {
                         imageValidation().call()
                         def docker_image = "${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${env.DOCKER_IMAGE_TAG}"
                        // dockerDeploy('dev', '5761' , '8761').call()
-                        k8s.auth_login("${env.GKE_DEV_CLUSTER_NAME}", "${env.GKE_DEV_ZONE}", "${env.GKE_DEV_PROJECT}")
+                        k8s.auth_login()
                         k8s.k8sdeploy("${env.K8S_DEV_FILE}")
                         echo "Deployed to Dev Succesfully!!!!"
                     }
