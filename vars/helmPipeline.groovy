@@ -62,9 +62,10 @@ def call(Map pipelineParams) {
             jdk 'Jdk-17'
         }
         stages {
-            stage ('Git checkout'){
+            stage ('Gitcheckout'){
                 steps {
-                    script{
+                    println("Gitcheckout: Git clone sureshindrala/surya-shared-lb started")
+                    script {
                         echo "Git Checkout from suryashared-lb"
                         k8s.gitClone()
                     
