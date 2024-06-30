@@ -54,7 +54,7 @@ def call(Map pipelineParams) {
             DOCKER_IMAGE_TAG = sh(script: 'git log -1 --pretty=%h', returnStdout:true).trim()
             K8S_DEV_FILE = "k8s_dev.yaml"
             DEV_NAMESPACE = 'cart-tst-ns'
-            HELM_PATH = "${WORKSPACE}/sureshindrala/surya-shared-lb/chart"
+            HELM_PATH = "${WORKSPACE}/surya-shared-lb/chart"
       
         }
         tools {
