@@ -25,7 +25,7 @@ class K8s{
     }
     def gitClone() {
         jenkins.sh """#!bin/bash
-        git clone -b main https://github.com/sureshindrala/surya-shared-lb.git
+        git clone https://github.com/sureshindrala/surya-shared-lb.git
         echo "Listing the file"
         ls -la
         
