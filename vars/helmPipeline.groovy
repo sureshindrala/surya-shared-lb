@@ -67,7 +67,7 @@ def call(Map pipelineParams) {
                     println("Gitcheckout: Git clone /surya-shared-lb started")
                     script {
                         echo "Git Checkout from suryashared-lb"
-                        k8s.gitClone().call()
+                        k8s.gitClone()
                     
                     }
                 }
