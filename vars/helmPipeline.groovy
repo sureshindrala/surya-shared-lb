@@ -55,6 +55,8 @@ def call(Map pipelineParams) {
             K8S_DEV_FILE = "k8s_dev.yaml"
             DEV_NAMESPACE = 'cart-tst-ns'
             HELM_PATH = "${WORKSPACE}/surya-shared-lb/chart"
+            DEV_ENV = "dev"
+            TEST_ENV = "tst"
       
         }
         tools {
@@ -188,8 +190,9 @@ def call(Map pipelineParams) {
                         imageValidation().call()
                         def docker_image = "${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${env.DOCKER_IMAGE_TAG}"
                        // dockerDeploy('dev', '5761' , '8761').call()
-                        k8s.auth_login()
-                        k8s.k8sdeploy("${env.K8S_DEV_FILE}", docker_image)
+                        //k8s.auth_login()
+                        //k8s.k8sdeploy("${env.K8S_DEV_FILE}", docker_image)
+                        k8s.k8sHelmChartDeploy("${env.APPLICATION_NAME}", "${env.DEV_ENV}", "${env.HELM_PATH}" , "${env.DOCKER_IMAGE_TAG}")
                         echo "Deployed to Dev Succesfully!!!!"
                     }
                 }
