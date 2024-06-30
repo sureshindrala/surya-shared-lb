@@ -62,7 +62,7 @@ def call(Map pipelineParams) {
             jdk 'Jdk-17'
         }
         stages {
-            stage ('Git checkout')
+            stage ('Git checkout'){
                 steps {
                     script{
                         eho "Git Checkout from suryashared-lb"
@@ -70,6 +70,9 @@ def call(Map pipelineParams) {
                     
                     }
                 }
+
+            }
+                
             stage('GKE Authentication') {
                 steps{
                     script {
