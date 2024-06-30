@@ -187,8 +187,10 @@ def call(Map pipelineParams) {
                 }
                 steps {
                     script {
+                        sh "ls -la"
+                        sh "ls -la .cicd"
                         //imageValidation().call()
-                        //def docker_image = "${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${env.DOCKER_IMAGE_TAG}"
+                        def docker_image = "${env.DOCKER_HUB}/${env.APPLICATION_NAME}:${env.DOCKER_IMAGE_TAG}"
                        // dockerDeploy('dev', '5761' , '8761').call()
                         //k8s.auth_login()
                         //k8s.k8sdeploy("${env.K8S_DEV_FILE}", docker_image)
