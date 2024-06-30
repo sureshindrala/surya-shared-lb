@@ -65,7 +65,7 @@ def call(Map pipelineParams) {
             stage ('Git checkout'){
                 steps {
                     script{
-                        eho "Git Checkout from suryashared-lb"
+                        echo "Git Checkout from suryashared-lb"
                         k8s.gitClone()
                     
                     }
