@@ -64,9 +64,10 @@ def call(Map pipelineParams) {
         stages {
             stage ('Git checkout')
                 steps {
-                    println ("Gitcheckout: sureshindrala/shared-lb.....!")
                     script{
+                        eho "Git Checkout from suryashared-lb"
                         k8s.gitClone()
+                    
                     }
                 }
             stage('GKE Authentication') {
