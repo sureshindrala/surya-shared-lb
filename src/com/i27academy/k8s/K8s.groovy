@@ -25,7 +25,9 @@ class K8s{
     }
     def gitClone() {
         jenkins.sh """#!bin/bash
+        echo "****** Cloning the git hub********"
         git clone -b main https://github.com/sureshindrala/surya-shared-lb.git
+        echo " ***** Git hub cloning completed ******"
         echo "Listing the file"
         ls -la
         
