@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: 
+  name: {{ .Values.fullname }} #i27-eureka-dev
+spec:
+  replicas: {{ .Values.replicas.default }}
+  selector:
+    matchLabels:
+      name: {{ .Values.name }}
+  template:
+    metadata:
+      labels:
+        name: {{ .Values.name }}
+    spec:
+      imagePullSecrets:
+      - name: private-jfrog-registry
+      containers:
+        - name: {{ .Values.name }}
+        # the below image should be dynamically change based on the devlelopment 
+          image: "{{ .Values.image.name }}:{{ .Values.image.tag }}"

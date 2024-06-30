@@ -22,16 +22,38 @@ class K8s{
         sed -i "s|DIT|$docker_image|g" ./.cicd/$fileName
         kubectl apply -f ./.cicd/$fileName
         """
+
+    def k8sHelmChartDeploy(appName, env, helmChartPath, imageTag) {
+       jenkins.sh """#!/bin/bash
+       echo "*************** Helm Groovy method Starts here ***************"
+       echo "Checking if helm chart exists"
+       if helm list | grep -q "${appName}-${env}-chart"; then
+        echo "Chart Exists !!!!!!!!!"
+        echo "Upgrading the Chart !!!!!!"
+        helm upgrade ${appName}-${env}-chart -f ./.cicd/k8s/values_${env}.yaml --set image.tag=${imageTag} ${helmChartPath}
+       else 
+        echo "Installing the Chart"
+        helm install ${appName}-${env}-chart -f ./.cicd/k8s/values_${env}.yaml --set image.tag=${imageTag} ${helmChartPath}
+       fi
+       # helm install chartname -f valuesfilepath chartpath
+       # helm upgrade chartname -f valuefilepath chartpath
+       """     
     }
+
+    
     def gitClone() {
-        jenkins.sh """#!bin/bash
-        echo "****** Cloning the git hub********"
-        git clone -b master  https://github.com/sureshindrala/surya-shared-lb.git
-        echo " ***** Git hub cloning completed ******"
-        echo "Listing the file"
-        ls -la
-        
-        """
-    }
+       jenkins.sh """#!/bin/bash
+       echo "*************** Entering Git Clone Method ***************"
+       git clone -b main https://github.com/sureshindrala/surya-shared-lb.git
+       echo "Listing the files"
+       ls -la 
+       echo "Showing the files under i27-shared-lib repo"
+       ls -la surya-shared-lb.git
+       echo "Showing the files under chart folder"
+       ls -la surya-shared-lb.git/chart/
+       #echo "Showing the link in default folder"
+       #ls -la i27-shared-lib/src/com/i27academy/k8s/default/
+       """ 
+    }    
         
 }
