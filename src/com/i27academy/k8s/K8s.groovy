@@ -50,9 +50,9 @@ class K8s{
        echo "Listing the files"
        ls -la 
        echo "Showing the files under i27-shared-lib repo"
-       ls -la surya-shared-lb.git
+       ls -la surya-shared-lb
        echo "Showing the files under chart folder"
-       ls -la surya-shared-lb.git/chart/
+       ls -la surya-shared-lb/chart/
        # echo "Showing the link in default folder"
        # ls -la surya-shared-lb/src/com/i27academy/k8s/default/
        """ 
