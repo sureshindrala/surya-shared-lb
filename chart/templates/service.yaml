@@ -1,0 +1,12 @@
+apiVersion: apps/v1
+kind: Service
+metadata:
+  name: {{.Values.fullname}}
+spec:
+  selector:
+    name: {{.Values.name}}
+  ports:
+    - protocol: TCP
+      port: 80
+      targetport: {{.Values.targetport}}
+  type: Nodeport

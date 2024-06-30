@@ -23,4 +23,13 @@ class K8s{
         kubectl apply -f ./.cicd/$fileName
         """
     }
+    def gitClone() {
+        jenkins.sh """#!bin/bash
+        git clone - main https://github.com/sureshindrala/surya-shared-lb.git
+        echo "Listing the file"
+        ls -la
+        
+        """
+    }
+        
 }
